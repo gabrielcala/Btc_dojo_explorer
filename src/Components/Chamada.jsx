@@ -9,7 +9,9 @@ const BlockSearch = () => {
   const fetchBlock = async () => {
     // Configurações do nó Bitcoin
     const rpcConfig = {
-      url: "http://137.131.145.51:18443",
+      url: "/rpc",
+      username: "user",
+      password: "pass"
     };
 
     setIsLoading(true);
@@ -20,13 +22,14 @@ const BlockSearch = () => {
       const hashResponse = await fetch(rpcConfig.url, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "text/plain",
+          "Authorization": "Basic " + btoa(`${rpcConfig.username}:${rpcConfig.password}`)
         },
         body: JSON.stringify({
-          jsonrpc: "2.0",
+          jsonrpc: "1.0",
           method: "getblockhash",
           params: [parseInt(blockNumber)],
-          id: 1,
+          id: "curltest"
         }),
       });
 
@@ -40,13 +43,14 @@ const BlockSearch = () => {
       const blockResponse = await fetch(rpcConfig.url, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "text/plain",
+          "Authorization": "Basic " + btoa(`${rpcConfig.username}:${rpcConfig.password}`)
         },
         body: JSON.stringify({
-          jsonrpc: "2.0",
+          jsonrpc: "1.0",
           method: "getblock",
           params: [hashData.result],
-          id: 1,
+          id: "curltest",
         }),
       });
 
