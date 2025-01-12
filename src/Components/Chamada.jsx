@@ -11,40 +11,21 @@ const BlockSearch = () => {
     const rpcConfig = {
       url: "/rpc",
       username: "user",
-      password: "pass"
+      password: "pass",
     };
 
     setIsLoading(true);
     setError(null);
 
-    try {
-      // Primeira chamada: obtém o hash do bloco
-      const hashResponse = await fetch(rpcConfig.url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "text/plain",
-          "Authorization": "Basic " + btoa(`${rpcConfig.username}:${rpcConfig.password}`)
-        },
-        body: JSON.stringify({
-          jsonrpc: "1.0",
-          method: "getblockhash",
-          params: [parseInt(blockNumber)],
-          id: "curltest"
-        }),
-      });
-
-      const hashData = await hashResponse.json();
-
-      if (hashData.error) {
-        throw new Error(hashData.error.message);
-      }
+   
 
       // Segunda chamada: obtém os detalhes do bloco
       const blockResponse = await fetch(rpcConfig.url, {
         method: "POST",
         headers: {
           "Content-Type": "text/plain",
-          "Authorization": "Basic " + btoa(`${rpcConfig.username}:${rpcConfig.password}`)
+          Authorization:
+            "Basic " + btoa(`${rpcConfig.username}:${rpcConfig.password}`),
         },
         body: JSON.stringify({
           jsonrpc: "1.0",
@@ -53,6 +34,80 @@ const BlockSearch = () => {
           id: "curltest",
         }),
       });
+
+      if (!isNaN(parseInt(blockNumber)) && Number.isInteger(Number(blockNumber))) {
+        try {
+          // Primeira chamada: obtém o hash do bloco
+          const hashResponse = await fetch(rpcConfig.url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "text/plain",
+              "Authorization": "Basic " + btoa(`${rpcConfig.username}:${rpcConfig.password}`)
+            },
+            body: JSON.stringify({
+              jsonrpc: "1.0",
+              method: "getblockhash",
+              params: [parseInt(blockNumber)],
+              id: "curltest"
+            }),
+          });
+    
+          const hashData = await hashResponse.json();
+    
+          if (hashData.error) {
+            throw new Error(hashData.error.message);
+          }
+    
+          // Segunda chamada: obtém os detalhes do bloco
+          const blockResponse = await fetch(rpcConfig.url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "text/plain",
+              "Authorization": "Basic " + btoa(`${rpcConfig.username}:${rpcConfig.password}`)
+            },
+            body: JSON.stringify({
+              jsonrpc: "1.0",
+              method: "getblock",
+              params: [hashData.result],
+              id: "curltest",
+            }),
+          });
+    
+          const blockData = await blockResponse.json();
+    
+          if (blockData.error) {
+            throw new Error(blockData.error.message);
+          }
+    
+          setBlockData(blockData.result);
+        } catch (error) {
+          setError(`Erro ao buscar bloco: ${error.message}`);
+          setBlockData(null);
+        } finally {
+          setIsLoading(false);
+        }
+      } else if (blockNumber.startsWith("bcrt1")) {
+        try {
+          const hashResponse = await fetch(rpcConfig.url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "text/plain",
+              "Authorization": "Basic " + btoa(`${rpcConfig.username}:${rpcConfig.password}`)
+            },
+            body: JSON.stringify({
+              jsonrpc: "1.0",
+              method: "listunspent",
+              params: [0, 9999999, [blockNumber]],
+              id: "curltest"
+            }),
+          });
+    
+          const response = await hashResponse.json();
+          let totalAmount = 0;
+          if (response.result && Array.isArray(response.result)) {
+            totalAmount = response.result.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+          }
+          console.log(totalAmount);
 
       const blockData = await blockResponse.json();
 
@@ -70,54 +125,78 @@ const BlockSearch = () => {
   };
 
   return (
-    <div className="p-4">
-      <div className="mb-4 flex gap-2">
+    <div className="px-14 h-screen w-screen flex flex-col items-center justify-center bg-gray-900">
+      <div className="mb-4 flex flex-col gap-2">
+        <h1 className="text-4xl text-cyan-400 font-bold mb-7 ">
+          Cyber BTC Explorer
+        </h1>
         <input
           type="number"
           value={blockNumber}
           onChange={(e) => setBlockNumber(e.target.value)}
-          placeholder="Digite o número do bloco"
+          placeholder="Search for block height, hash, wallet"
           className="p-2 border rounded"
         />
         <button
           onClick={fetchBlock}
           disabled={isLoading}
-          className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-400"
+          className=" font-bold mt-4 px-4 py-2 bg-gradient-to-r from-cyan-500 to-pink-500 text-black rounded-lg hover:shadow-pink-500/50"
         >
-          {isLoading ? "Buscando..." : "Buscar"}
+          {isLoading ? "Explorando..." : "Explorar"}
         </button>
       </div>
 
       {error && <div className="text-red-500 mb-4">{error}</div>}
 
       {blockData && (
-        <div className="space-y-2">
+        <div className="space-y-2 mx-16 justify-center flex items-center flex-col bg-gray-700 rounded-2xl">
           <h2 className="text-xl font-bold mb-4">Informações do Bloco</h2>
-          <p>
-            <strong>Hash:</strong> {blockData.hash}
-          </p>
-          <p>
-            <strong>Altura:</strong> {blockData.height}
-          </p>
-          <p>
-            <strong>Timestamp:</strong>{" "}
-            {new Date(blockData.time * 1000).toLocaleString()}
-          </p>
-          <p>
-            <strong>Nº de Transações:</strong> {blockData.nTx}
-          </p>
-          <p>
-            <strong>Tamanho:</strong> {blockData.size} bytes
-          </p>
-          <p>
-            <strong>Merkle Root:</strong> {blockData.merkleroot}
-          </p>
-          <p>
-            <strong>Versão:</strong> {blockData.version}
-          </p>
-          <p>
-            <strong>Dificuldade:</strong> {blockData.difficulty}
-          </p>
+          <div className="h-full px-14">
+            <div className="justify-between border-b-2 text-green-400">
+              <strong>Hash:</strong> {blockData.hash}
+            </div>
+
+            <div className="justify-between border-b-2 text-green-400">
+              <p>
+                <strong>Altura:</strong> {blockData.height}
+              </p>
+            </div>
+            <div className="justify-between border-b-2 text-green-400">
+              {" "}
+              <p>
+                <strong>Timestamp:</strong>{" "}
+                {new Date(blockData.time * 1000).toLocaleString()}
+              </p>
+            </div>
+            <div className="justify-between border-b-2 text-green-400">
+              {" "}
+              <p>
+                <strong>Nº de Transações:</strong> {blockData.nTx}
+              </p>
+            </div>
+            <div className="justify-between border-b-2 text-green-400">
+              {" "}
+              <p>
+                <strong>Tamanho:</strong> {blockData.size} bytes
+              </p>
+            </div>
+            <div className="justify-between border-b-2 text-green-400">
+              <p>
+                <strong>Merkle Root:</strong> {blockData.merkleroot}
+              </p>
+            </div>
+            <div className="justify-between border-b-2 text-green-400">
+              {" "}
+              <p>
+                <strong>Versão:</strong> {blockData.version}
+              </p>
+            </div>
+            <div className="justify-between border-b-2 text-green-400">
+              <p>
+                <strong>Dificuldade:</strong> {blockData.difficulty}
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </div>
