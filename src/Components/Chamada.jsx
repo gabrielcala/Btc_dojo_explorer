@@ -5,6 +5,7 @@ const BlockSearch = () => {
   const [blockData, setBlockData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [totalAmount, settotalAmount] = useState();
 
   const fetchBlock = async () => {
     // Configurações do nó Bitcoin
@@ -17,57 +18,97 @@ const BlockSearch = () => {
     setIsLoading(true);
     setError(null);
 
-    try {
-      // Primeira chamada: obtém o hash do bloco
-      const hashResponse = await fetch(rpcConfig.url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "text/plain",
-          Authorization:
-            "Basic " + btoa(`${rpcConfig.username}:${rpcConfig.password}`),
-        },
-        body: JSON.stringify({
-          jsonrpc: "1.0",
-          method: "getblockhash",
-          params: [parseInt(blockNumber)],
-          id: "curltest",
-        }),
-      });
+    if (
+      !isNaN(parseInt(blockNumber)) &&
+      Number.isInteger(Number(blockNumber))
+    ) {
+      try {
+        // Primeira chamada: obtém o hash do bloco
+        const hashResponse = await fetch(rpcConfig.url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain",
+            Authorization:
+              "Basic " + btoa(`${rpcConfig.username}:${rpcConfig.password}`),
+          },
+          body: JSON.stringify({
+            jsonrpc: "1.0",
+            method: "getblockhash",
+            params: [parseInt(blockNumber)],
+            id: "curltest",
+          }),
+        });
 
-      const hashData = await hashResponse.json();
+        const hashData = await hashResponse.json();
 
-      if (hashData.error) {
-        throw new Error(hashData.error.message);
+        if (hashData.error) {
+          throw new Error(hashData.error.message);
+        }
+
+        // Segunda chamada: obtém os detalhes do bloco
+        const blockResponse = await fetch(rpcConfig.url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain",
+            Authorization:
+              "Basic " + btoa(`${rpcConfig.username}:${rpcConfig.password}`),
+          },
+          body: JSON.stringify({
+            jsonrpc: "1.0",
+            method: "getblock",
+            params: [hashData.result],
+            id: "curltest",
+          }),
+        });
+
+        const blockData = await blockResponse.json();
+
+        if (blockData.error) {
+          throw new Error(blockData.error.message);
+        }
+
+        setBlockData(blockData.result);
+      } catch (error) {
+        setError(`Erro ao buscar bloco: ${error.message}`);
+        setBlockData(null);
+      } finally {
+        setIsLoading(false);
       }
+    } else if (blockNumber.startsWith("bcrt1")) {
+      try {
+        const hashResponse = await fetch(rpcConfig.url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain",
+            Authorization:
+              "Basic " + btoa(`${rpcConfig.username}:${rpcConfig.password}`),
+          },
+          body: JSON.stringify({
+            jsonrpc: "1.0",
+            method: "listunspent",
+            params: [0, 9999999, [blockNumber]],
+            id: "curltest",
+          }),
+        });
 
-      // Segunda chamada: obtém os detalhes do bloco
-      const blockResponse = await fetch(rpcConfig.url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "text/plain",
-          Authorization:
-            "Basic " + btoa(`${rpcConfig.username}:${rpcConfig.password}`),
-        },
-        body: JSON.stringify({
-          jsonrpc: "1.0",
-          method: "getblock",
-          params: [hashData.result],
-          id: "curltest",
-        }),
-      });
+        const response = await hashResponse.json();
+        let amount = 0;
+        if (response.result && Array.isArray(response.result)) {
+          amount = response.result.reduce(
+            (sum, tx) => sum + (tx.amount || 0),
+            0
+          );
 
-      const blockData = await blockResponse.json();
+          settotalAmount(amount);
+        }
 
-      if (blockData.error) {
-        throw new Error(blockData.error.message);
+        console.log(amount);
+      } catch (error) {
+        setError(`Erro ao buscar bloco: ${error.message}`);
+      } finally {
+        setBlockData(null);
+        setIsLoading(false);
       }
-
-      setBlockData(blockData.result);
-    } catch (error) {
-      setError(`Erro ao buscar bloco: ${error.message}`);
-      setBlockData(null);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -78,7 +119,7 @@ const BlockSearch = () => {
           Cyber BTC Explorer
         </h1>
         <input
-          type="number"
+          type="text"
           value={blockNumber}
           onChange={(e) => setBlockNumber(e.target.value)}
           placeholder="Search for block height, hash, wallet"
@@ -92,6 +133,11 @@ const BlockSearch = () => {
           {isLoading ? "Explorando..." : "Explorar"}
         </button>
       </div>
+      {totalAmount && (
+        <div className="bg-gray-700 rounded-2xl w-52 h-16 flex flex-col items-center justify-center text-green-400 text-xl">
+          <p>Yor Balance is: {totalAmount}</p>
+        </div>
+      )}
 
       {error && <div className="text-red-500 mb-4">{error}</div>}
 
