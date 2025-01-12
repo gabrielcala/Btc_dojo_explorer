@@ -17,7 +17,28 @@ const BlockSearch = () => {
     setIsLoading(true);
     setError(null);
 
-   
+    try {
+      // Primeira chamada: obtém o hash do bloco
+      const hashResponse = await fetch(rpcConfig.url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain",
+          Authorization:
+            "Basic " + btoa(`${rpcConfig.username}:${rpcConfig.password}`),
+        },
+        body: JSON.stringify({
+          jsonrpc: "1.0",
+          method: "getblockhash",
+          params: [parseInt(blockNumber)],
+          id: "curltest",
+        }),
+      });
+
+      const hashData = await hashResponse.json();
+
+      if (hashData.error) {
+        throw new Error(hashData.error.message);
+      }
 
       // Segunda chamada: obtém os detalhes do bloco
       const blockResponse = await fetch(rpcConfig.url, {
@@ -34,80 +55,6 @@ const BlockSearch = () => {
           id: "curltest",
         }),
       });
-
-      if (!isNaN(parseInt(blockNumber)) && Number.isInteger(Number(blockNumber))) {
-        try {
-          // Primeira chamada: obtém o hash do bloco
-          const hashResponse = await fetch(rpcConfig.url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "text/plain",
-              "Authorization": "Basic " + btoa(`${rpcConfig.username}:${rpcConfig.password}`)
-            },
-            body: JSON.stringify({
-              jsonrpc: "1.0",
-              method: "getblockhash",
-              params: [parseInt(blockNumber)],
-              id: "curltest"
-            }),
-          });
-    
-          const hashData = await hashResponse.json();
-    
-          if (hashData.error) {
-            throw new Error(hashData.error.message);
-          }
-    
-          // Segunda chamada: obtém os detalhes do bloco
-          const blockResponse = await fetch(rpcConfig.url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "text/plain",
-              "Authorization": "Basic " + btoa(`${rpcConfig.username}:${rpcConfig.password}`)
-            },
-            body: JSON.stringify({
-              jsonrpc: "1.0",
-              method: "getblock",
-              params: [hashData.result],
-              id: "curltest",
-            }),
-          });
-    
-          const blockData = await blockResponse.json();
-    
-          if (blockData.error) {
-            throw new Error(blockData.error.message);
-          }
-    
-          setBlockData(blockData.result);
-        } catch (error) {
-          setError(`Erro ao buscar bloco: ${error.message}`);
-          setBlockData(null);
-        } finally {
-          setIsLoading(false);
-        }
-      } else if (blockNumber.startsWith("bcrt1")) {
-        try {
-          const hashResponse = await fetch(rpcConfig.url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "text/plain",
-              "Authorization": "Basic " + btoa(`${rpcConfig.username}:${rpcConfig.password}`)
-            },
-            body: JSON.stringify({
-              jsonrpc: "1.0",
-              method: "listunspent",
-              params: [0, 9999999, [blockNumber]],
-              id: "curltest"
-            }),
-          });
-    
-          const response = await hashResponse.json();
-          let totalAmount = 0;
-          if (response.result && Array.isArray(response.result)) {
-            totalAmount = response.result.reduce((sum, tx) => sum + (tx.amount || 0), 0);
-          }
-          console.log(totalAmount);
 
       const blockData = await blockResponse.json();
 
