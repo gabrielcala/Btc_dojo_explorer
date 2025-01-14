@@ -127,7 +127,6 @@ const BlockSearch = () => {
         });
   
         const response = await hashResponse.json();
-        console.log(response.result);
         setTransactionData(response.result);
       } catch (error) {
         setError(`Erro ao buscar bloco: ${error.message}`);
