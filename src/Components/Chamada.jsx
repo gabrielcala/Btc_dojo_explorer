@@ -109,6 +109,30 @@ const BlockSearch = () => {
         setBlockData(null);
         setIsLoading(false);
       }
+    } else {
+      try {
+        const hashResponse = await fetch(rpcConfig.url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain",
+            "Authorization": "Basic " + btoa(`${rpcConfig.username}:${rpcConfig.password}`)
+          },
+          body: JSON.stringify({
+            jsonrpc: "1.0",
+            method: "gettransaction",
+            params: [blockNumber],
+            id: "curltest"
+          }),
+        });
+  
+        const response = await hashResponse.json();
+        console.log(response.result);
+      } catch (error) {
+        setError(`Erro ao buscar bloco: ${error.message}`);
+      } finally {
+        setBlockData(null);
+        setIsLoading(false);
+      }
     }
   };
 
