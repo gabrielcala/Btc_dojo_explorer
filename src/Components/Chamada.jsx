@@ -6,6 +6,7 @@ const BlockSearch = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [totalAmount, settotalAmount] = useState();
+  const [transactionData, setTransactionData] = useState(null);
 
   const fetchBlock = async () => {
     // Configurações do nó Bitcoin
@@ -127,6 +128,7 @@ const BlockSearch = () => {
   
         const response = await hashResponse.json();
         console.log(response.result);
+        setTransactionData(response.result);
       } catch (error) {
         setError(`Erro ao buscar bloco: ${error.message}`);
       } finally {
@@ -212,6 +214,79 @@ const BlockSearch = () => {
               <p>
                 <strong>Dificuldade:</strong> {blockData.difficulty}
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {transactionData && (
+        <div className="space-y-2 mx-16 justify-center flex items-center flex-col bg-gray-700 rounded-2xl p-4">
+          <h2 className="text-xl font-bold mb-4 text-white">Informações da Transação</h2>
+          <div className="h-full px-14 text-green-400">
+            <div className="justify-between border-b-2">
+              <strong>Transaction ID:</strong> {transactionData.txid}
+            </div>
+            <div className="justify-between border-b-2">
+              <strong>Amount:</strong> {transactionData.amount} BTC
+            </div>
+            <div className="justify-between border-b-2">
+              <strong>Fee:</strong> {transactionData.fee} BTC
+            </div>
+            <div className="justify-between border-b-2">
+              <strong>Confirmations:</strong> {transactionData.confirmations}
+            </div>
+            <div className="justify-between border-b-2">
+              <strong>Block Hash:</strong> {transactionData.blockhash}
+            </div>
+            <div className="justify-between border-b-2">
+              <strong>Block Index:</strong> {transactionData.blockindex}
+            </div>
+            <div className="justify-between border-b-2">
+              <strong>Block Time:</strong> {new Date(transactionData.blocktime * 1000).toLocaleString()}
+            </div>
+            <div className="justify-between border-b-2">
+              <strong>Time:</strong> {new Date(transactionData.time * 1000).toLocaleString()}
+            </div>
+            <div className="justify-between border-b-2">
+              <strong>Time Received:</strong> {new Date(transactionData.timereceived * 1000).toLocaleString()}
+            </div>
+            
+            {/* Details section */}
+            <div className="mt-4">
+              <h3 className="text-lg font-bold mb-2">Details</h3>
+              {transactionData.details && transactionData.details.map((detail, index) => (
+                <div key={index} className="mb-4 pl-4 border-l-2 border-green-400">
+                  <div><strong>Address:</strong> {detail.address}</div>
+                  <div><strong>Category:</strong> {detail.category}</div>
+                  <div><strong>Amount:</strong> {detail.amount} BTC</div>
+                  {detail.fee && <div><strong>Fee:</strong> {detail.fee} BTC</div>}
+                  {detail.label && <div><strong>Label:</strong> {detail.label}</div>}
+                  {detail.vout !== undefined && <div><strong>Vout:</strong> {detail.vout}</div>}
+                </div>
+              ))}
+            </div>
+
+            {/* Hex data */}
+            <div className="justify-between border-b-2">
+              <strong>Hex:</strong>
+              <div className="break-all text-xs">{transactionData.hex}</div>
+            </div>
+
+            {/* Wallet conflicts if any */}
+            {transactionData.walletconflicts && transactionData.walletconflicts.length > 0 && (
+              <div className="justify-between border-b-2">
+                <strong>Wallet Conflicts:</strong>
+                <ul>
+                  {transactionData.walletconflicts.map((conflict, index) => (
+                    <li key={index}>{conflict}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Bip125 replaceable */}
+            <div className="justify-between border-b-2">
+              <strong>BIP125 Replaceable:</strong> {transactionData.bip125_replaceable}
             </div>
           </div>
         </div>
