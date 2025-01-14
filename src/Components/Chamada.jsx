@@ -160,7 +160,7 @@ const BlockSearch = () => {
       </div>
       {totalAmount && (
         <div className="bg-gray-700 rounded-2xl w-52 h-16 flex flex-col items-center justify-center text-green-400 text-xl">
-          <p>Yor Balance is: {totalAmount}</p>
+          <p>Your Balance is: {totalAmount}</p>
         </div>
       )}
 
